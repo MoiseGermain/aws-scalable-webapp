@@ -13,7 +13,7 @@ The architecture ensures **scalability, fault tolerance, and cost efficiency**.
 - **Monitoring:** AWS CloudWatch, SNS Alerts  
 
 ## 📂 Architecture Diagram  
-![Architecture Diagram](architecture-web-diagram.png)  
+![Architecture Diagram](diagrams/architecture-web-diagram.png)  
 
 ## 🚀 Project Implementation  
 ### **1. Setting Up Networking**  
