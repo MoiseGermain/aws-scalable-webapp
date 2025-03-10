@@ -179,3 +179,9 @@ Since I have created a **Custom AMI**, the existing instance is no longer needed
 At this stage, my environment consists of a **Custom AMI**, which will be used to deploy an **auto-scaling web service** in the next phase.
 
 ![Architecture Diagram](../screenshots/ec2-architecture-diagram.png)  
+
+## **✅ Next Steps**
+Now that the **EC2 instance and AMI have been created**, I will configure **Auto Scaling and Load Balancer**.
+
+➡️ **[Setting Up Auto Scaling and Load Balancer](../docs/auto-scaling-deployment.md)**
+
