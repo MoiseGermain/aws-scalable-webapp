@@ -1,22 +1,25 @@
 #!/bin/sh
 
-# Install a LAMP stack
+# Update and install required packages
+dnf update -y
 dnf install -y httpd wget php-fpm php-mysqli php-json php php-devel
 dnf install -y mariadb105-server
 dnf install -y httpd php-mbstring
 
-# Start the web server
+# Start and enable Apache Web Server
 chkconfig httpd on
 systemctl start httpd
 
-# Install the web pages
+# Deploy Web Application
+cd /var/www/html
+
+# Download and unzip the web application if it doesn’t already exist
 if [ ! -f /var/www/html/webapp.zip ]; then
-   cd /var/www/html
    wget -O 'webapp.zip' 'https://example.com/webapp.zip'
    unzip webapp.zip
 fi
 
-# Install AWS SDK for PHP
+# Install AWS SDK for PHP (Optional)
 if [ ! -f /var/www/html/aws.zip ]; then
    cd /var/www/html
    mkdir vendor
@@ -25,5 +28,5 @@ if [ ! -f /var/www/html/aws.zip ]; then
    unzip aws.zip
 fi
 
-# Update existing packages
-dnf update -y
+# Restart Apache to apply changes
+systemctl restart httpd
