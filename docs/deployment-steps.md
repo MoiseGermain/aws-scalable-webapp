@@ -72,8 +72,9 @@ Once the **VPC is successfully created**, AWS automatically provisions related *
 ---
 
 ## **✅ Next Steps**
-Now that the **VPC and networking setup** is complete, I will proceed to:  
-➡️ **Phase 2: Deploying EC2 Instances and Configuring Auto Scaling**  
-➡️ **Phase 3: Setting Up RDS and Storage Services**  
+Now that the **VPC and networking setup** is complete, I will proceed to:
+
+➡️ **[Deploying EC2 & Auto Scaling Instances](../docs/ec2-deployment.md)**  
+ 
 
 ---
