@@ -1,23 +1,21 @@
-# 🚀 Security Group Rules for EC2 Web Server  
+# 🚀 Security Group Rules for AWS Scalable Web Application  
 
-## **🔹 Security Group Name: scalable-webapp-security-group**  
-This security group is assigned to the EC2 instance hosting the web application. It controls **inbound** and **outbound** traffic, following the principle of **least privilege**.
+This document contains the security group configurations for **EC2**, **RDS**, and **Application Load Balancer (ALB)** in the `scalable-webapp-vpc`.
 
 ---
 
-## **✅ Inbound Rules**  
+## **🔹 Security Group: EC2 Web Server (`scalable-webapp-sg`)**
+This security group is assigned to the **EC2 instances hosting the web application**.
+
+### ✅ Inbound Rules:
 | **Rule Name** | **Type** | **Protocol** | **Port Range** | **Source** | **Description** |
 |--------------|---------|-------------|---------------|------------|--------------|
-| Allow HTTP Traffic | HTTP | TCP | 80 | My IP | Allows web traffic from my machine only |
-| Allow SSH Access (Optional) | SSH | TCP | 22 | My IP | Allows SSH access from my machine for management |
+| Allow HTTP Traffic | HTTP | TCP | 80 | 0.0.0.0/0 | Allows web traffic from the internet |
+| Allow SSH Access (Optional) | SSH | TCP | 22 | My IP | Allows SSH access for management |
 
-📌 *Port 22 (SSH) should only be allowed if I need to access the instance manually. It’s best to use EC2 Instance Connect instead for security.*  
+📌 *Port 22 (SSH) should be restricted to **My IP** only for security reasons.*  
 
----
-
-## **✅ Outbound Rules**  
-By default, AWS security groups allow all **outbound traffic**. If outbound rules are restricted, I will ensure that **HTTP (80) and HTTPS (443)** traffic is allowed for updates and external API requests.
-
+### ✅ Outbound Rules:
 | **Rule Name** | **Type** | **Protocol** | **Port Range** | **Destination** | **Description** |
 |--------------|---------|-------------|---------------|------------|--------------|
 | Allow Web Traffic | HTTP | TCP | 80 | 0.0.0.0/0 | Allows outbound web traffic |
@@ -25,16 +23,46 @@ By default, AWS security groups allow all **outbound traffic**. If outbound rule
 
 ---
 
+## **🔹 Security Group: RDS Database (`scalable-webapp-rds-sg`)**
+This security group is assigned to **Amazon RDS**, ensuring that only EC2 instances in the web application can access the database.
+
+### ✅ Inbound Rules:
+| **Rule Name** | **Type** | **Protocol** | **Port Range** | **Source** | **Description** |
+|--------------|---------|-------------|---------------|------------|--------------|
+| Allow MySQL/Aurora | MySQL/Aurora | TCP | 3306 | scalable-webapp-sg | Allows database access only from EC2 instances |
+
+📌 *By setting the source to `scalable-webapp-sg`, only the web application servers can connect to the database, improving security.*  
+
+### ✅ Outbound Rules:
+| **Rule Name** | **Type** | **Protocol** | **Port Range** | **Destination** | **Description** |
+|--------------|---------|-------------|---------------|------------|--------------|
+| Allow All Outbound | All | All | All | 0.0.0.0/0 | Allows RDS to send responses |
+
+---
+
+## **🔹 Security Group: Application Load Balancer (ALB) (`scalable-webapp-alb-sg`)**
+This security group is assigned to the **Application Load Balancer (ALB)**, allowing traffic from the internet to the EC2 instances.
+
+### ✅ Inbound Rules:
+| **Rule Name** | **Type** | **Protocol** | **Port Range** | **Source** | **Description** |
+|--------------|---------|-------------|---------------|------------|--------------|
+| Allow HTTP | HTTP | TCP | 80 | 0.0.0.0/0 | Allows inbound web traffic from the internet |
+
+📌 *Since the ALB is public-facing, it allows inbound traffic from anywhere (`0.0.0.0/0`).*
+
+### ✅ Outbound Rules:
+| **Rule Name** | **Type** | **Protocol** | **Port Range** | **Destination** | **Description** |
+|--------------|---------|-------------|---------------|------------|--------------|
+| Allow Traffic to EC2 | HTTP | TCP | 80 | scalable-webapp-sg | Routes traffic from ALB to EC2 instances |
+
+📌 *By restricting outbound traffic to `scalable-webapp-sg`, only web servers behind the ALB receive traffic.*
+
+---
+
 ## **🔹 Additional Security Considerations**
-- ❌ **Avoid using `0.0.0.0/0` for SSH access.** Instead, restrict to **My IP**.
-- 🔐 **For production environments**, consider using a **bastion host** or **Session Manager** instead of opening SSH.
-- ✅ **For a public-facing web application**, change the HTTP rule source from **My IP** to `0.0.0.0/0` so that anyone can access the website.
+- **Do not expose RDS (port 3306) to the public.** Only allow connections from the EC2 security group.  
+- **Use an ALB instead of opening EC2 instances directly to the internet.**  
+- **Avoid using `0.0.0.0/0` for SSH (port 22).** Always restrict it to `My IP`.  
+- **If enabling HTTPS (443), attach an SSL certificate to the ALB and update security groups accordingly.**  
 
 ---
-
-## **📌 Next Steps**
-🔹 I will update this file when adding **RDS Security Groups** in the next phase.  
-🔹 If I add an **Application Load Balancer (ALB)**, I will create a **separate security group** for it.
-
----
-
