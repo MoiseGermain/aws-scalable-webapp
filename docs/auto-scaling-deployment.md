@@ -278,6 +278,6 @@ At this stage, I have successfully:
 
 ## **Next Steps**
 ➡️ **[Review Troubleshooting Guide](../docs/troubleshooting.md)**  
-➡️ **Optimize Costs Using CloudWatch & AWS Budgets**  
+➡️ **[Deploy Amazon RDS Database](../docs/rds-deployment.md)**   
 
 ---
