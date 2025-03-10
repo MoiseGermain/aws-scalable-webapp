@@ -1,88 +1,171 @@
-# 🚀 Deploying Amazon RDS Aurora & Connecting to Auto Scaling Web Service  
+# 🚀 Deploying Amazon RDS Aurora & Integrating with Auto Scaling Web Application
 
-Now that my **Auto Scaling Web Service** is running, I will deploy an **Amazon RDS Aurora instance** in `scalable-webapp-vpc` and configure the **web servers** in the Auto Scaling Group to connect to the database.
-
-This setup ensures:
-✅ **High availability** with Amazon RDS Aurora (Multi-AZ).  
-✅ **Scalability** by allowing multiple web servers to connect to a single database.  
-✅ **Separation of concerns** (database is managed separately from the web layer).  
+In this section, I will **deploy an RDS Aurora (MySQL) instance** within `scalable-webapp-vpc` and configure the **Auto Scaling web service** (Apache + PHP) to connect to it. After establishing the connection, I will **create a new Custom AMI** and update the **Auto Scaling Group** with the new AMI version.
 
 ---
 
-## **1️⃣ Creating an Amazon RDS Aurora Database**
-Amazon RDS Aurora is a **fully managed relational database service** that is optimized for high performance and availability. Since I am using a **MySQL-compatible Aurora instance**, I can easily integrate it with my web service.
+## **1️⃣ Configuring Security Groups for RDS Access**
+Amazon RDS **follows the same security model as EC2**. To maintain the **principle of least privilege**, I will create a **security group** that allows only the **Auto Scaling EC2 instances** to access the database.
 
-### **Creating the RDS Instance**
-1. Navigate to **AWS Console** → **RDS**.
+### **Create RDS Security Group**
+1. **Go to** AWS Console → **VPC** → **Security Groups**.
+2. Click **Create Security Group**.
+3. **Enter the following details:**
+
+   | **Key**             | **Value**                      |
+   |---------------------|--------------------------------|
+   | Security Group Name | `DB-SG`                        |
+   | Description        | `Database Security Group`      |
+   | VPC               | `scalable-webapp-vpc`          |
+
+4. **Inbound Rule:** Click **Add Rule** → Set **Type** to `MySQL/Aurora` (port `3306`).
+5. **Source:** Select **EC2 Security Group (`ASG-Web-Inst-SG`)**.
+6. Click **Create Security Group**.
+
+📸 ![RDS Security Group](../screenshots/rds-security-group.png)
+
+✅ **Why?**
+- This ensures **only EC2 web instances** in the Auto Scaling Group can connect to the database.
+
+---
+
+## **2️⃣ Creating Amazon RDS Aurora Instance**
+
+1. **Go to AWS Console** → **RDS**.
 2. Click **Create Database**.
 3. Select **Standard Create**.
-4. Choose **Engine Type** → Select **Amazon Aurora**.
-5. Under **Edition**, choose **Aurora MySQL-Compatible Edition**.
+4. **Database Engine:** `Amazon Aurora (MySQL Compatible)`.
+5. **Version:** `Aurora MySQL 5.7`.
 
-📸 ![Create RDS Aurora](../screenshots/create-rds-aurora.png)
+### **Database Settings**
+| **Key**                | **Value**                     |
+|------------------------|-----------------------------|
+| DB Cluster Identifier | `rdscluster`                |
+| Master Username       | `awsuser`                    |
+| Master Password       | `awspassword`                |
 
----
+📸 ![Database Settings](../screenshots/database-settings.png)
 
-### **Configuring Database Settings**
-1. **DB Cluster Identifier:** `scalable-webapp-db`
-2. **Master Username:** `admin`
-3. **Master Password:** Set a strong password.
-4. **DB Instance Class:** `db.t3.medium` (adjust based on workload).
-5. **Multi-AZ Deployment:** ✅ Enabled for high availability.
-6. **Storage Type:** `General Purpose (SSD)`.
+### **Instance Configuration**
+1. **DB Instance Class:** `db.r5.large` (Memory Optimized).
+2. **Availability & Durability:** `Create an Aurora Replica in another AZ` (for high availability).
 
-📸 ![RDS Configuration](../screenshots/rds-config.png)
+### **Networking & Security**
+| **Key**                  | **Value**                     |
+|--------------------------|-----------------------------|
+| VPC                      | `scalable-webapp-vpc`       |
+| Subnet Group             | `Create new DB subnet group` |
+| Publicly Accessible?     | `No`                         |
+| Security Group           | `DB-SG`                      |
+| Database Port            | `3306`                       |
 
-✅ **Why?**
-- **Aurora is highly available** (Multi-AZ).
-- **Better performance than traditional RDS MySQL**.
-- **Automatic scaling** to handle large workloads.
+📸 ![RDS Network Settings](../screenshots/rds-network-settings.png)
 
----
-
-### **2️⃣ Configuring Networking for RDS**
-Since my **web application in Auto Scaling Group** needs to connect to the database, I must ensure that:
-- The **RDS instance is inside `scalable-webapp-vpc`**.
-- The **web servers in Auto Scaling Group can communicate with the database**.
-
-#### **VPC & Security Settings**
-1. **VPC:** `scalable-webapp-vpc`
-2. **Subnet Group:** Select the **public and private subnets**.
-3. **Security Group:** Create a new security group for RDS.
-
-📸 ![RDS Networking](../screenshots/rds-networking.png)
-
----
-
-### **3️⃣ Setting Up Security Groups for Database Access**
-I need to **allow EC2 instances** to connect to the RDS database while **blocking direct internet access**.
-
-#### **Creating RDS Security Group**
-1. **Go to EC2 Console** → **Security Groups**.
-2. Click **Create Security Group**.
-3. **Name:** `rds-db-sg`
-4. **Inbound Rules:**
-   - **Type:** MySQL/Aurora
-   - **Port:** `3306`
-   - **Source:** `ASG-Web-Inst-SG` (Web server security group)
-
-📸 ![RDS Security Group](../screenshots/rds-sg.png)
+7. Click **Create Database**.
+8. Wait until the **DB Status is `Available`**.
 
 ✅ **Why?**
-- **Only web servers in Auto Scaling Group can connect to the database**.
-- **Blocks external access for security**.
+- **Databases should be in private subnets** for security.
+- **High availability ensures failover** in case of an outage.
 
 ---
 
-## **4️⃣ Updating Web Service to Use RDS**
-Now that **RDS is set up**, I need to **update my web service** to use the **database connection**.
+## **3️⃣ Storing RDS Credentials in AWS Secrets Manager**
+To **securely store database credentials**, I will use **AWS Secrets Manager** instead of hardcoding them in application code.
 
-### **Updating the Web Application Code**
-I will modify the **database connection settings** in my web service’s **PHP configuration**.
+### **Creating a Secret for Database Credentials**
+1. **Go to AWS Console** → **Secrets Manager**.
+2. Click **Store a New Secret**.
+3. **Select `Credentials for Amazon RDS database`**.
+4. Enter the database credentials:
 
-#### **Editing `db-config.php`**
-1. SSH into one of the **EC2 instances**.
-2. Open the PHP configuration file:
-   ```sh
-   sudo nano /var/www/html/db-config.php
+   | **Key**     | **Value**    |
+   |------------|-------------|
+   | Username   | `awsuser`   |
+   | Password   | `awspassword` |
 
+5. Select the **RDS instance (`rdscluster`)**.
+6. Click **Next** → Set Secret Name: `mysecret`.
+7. Click **Store**.
+
+📸 ![Secrets Manager](../screenshots/secrets-manager.png)
+
+✅ **Why?**
+- **Prevents credentials from being exposed in the application code.**
+- **Allows secure retrieval using AWS IAM permissions.**
+
+---
+
+## **4️⃣ Granting Web Server Access to Secrets Manager**
+Since the web server needs access to database credentials, I will **attach a policy to its IAM role**.
+
+### **Create an IAM Policy for Secrets Manager Access**
+1. **Go to AWS Console** → **IAM** → **Policies**.
+2. Click **Create Policy** → Choose **Secrets Manager**.
+3. Under **Permissions**, select `Read` → `GetSecretValue`.
+4. Click **Next** → **Name the Policy `ReadSecrets`** → **Create Policy**.
+
+### **Attach the Policy to Web Server IAM Role**
+1. **Go to AWS Console** → **IAM** → **Roles**.
+2. Find `SSMInstanceProfile` (the IAM role for EC2 instances).
+3. Click **Attach Policies** → Search `ReadSecrets` → Attach.
+
+📸 ![IAM Policy](../screenshots/iam-policy.png)
+
+✅ **Why?**
+- Grants **minimum permissions** to retrieve credentials.
+- **Prevents unauthorized access** to other secrets.
+
+---
+
+## **5️⃣ Connecting the Web App to RDS**
+1. **Go to EC2 Console** → **Load Balancers**.
+2. Copy the **ALB DNS Name**.
+3. Open a **web browser** → Paste the ALB URL.
+4. Click the **RDS Tab** on the web app.
+5. The database should now be **readable from the web app!** 🎉
+
+📸 ![Web App Connected](../screenshots/web-app-rds.png)
+
+✅ **Why?**
+- The web app is now dynamically retrieving data from RDS.
+
+---
+
+## **6️⃣ Creating a New AMI & Updating Auto Scaling Group**
+Since the web server is now **connected to RDS**, I will create a **new AMI** and update Auto Scaling to use it.
+
+### **Create a New AMI**
+1. **Go to EC2 Console** → **Instances**.
+2. Select the running web server instance.
+3. Click **Actions** → **Create Image**.
+4. Set **Image Name**: `Web Server RDS v1`.
+5. Click **Create Image**.
+
+📸 ![Create AMI](../screenshots/create-ami.png)
+
+### **Update Auto Scaling Group**
+1. **Go to EC2 Console** → **Launch Templates**.
+2. Click **Web-ASG** → **Create New Version**.
+3. Select **AMI: `Web Server RDS v1`**.
+4. Click **Create Launch Template Version**.
+5. **Update Auto Scaling Group** to use the new version.
+
+📸 ![Update ASG](../screenshots/update-asg.png)
+
+✅ **Why?**
+- Ensures **new instances automatically use the latest configuration**.
+- **No manual setup required for future scaling.**
+
+---
+
+## **✅ Summary**
+By completing this setup, I have:
+✅ Deployed an **Amazon RDS Aurora MySQL database**.  
+✅ Configured **secure access** using Security Groups & IAM.  
+✅ Connected the **web application to RDS** using AWS Secrets Manager.  
+✅ Created a **new AMI** and updated **Auto Scaling** for seamless scaling.  
+
+📸 ![Final Architecture](../screenshots/final-architecture.png)
+
+---
