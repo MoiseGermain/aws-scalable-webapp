@@ -162,5 +162,5 @@ Edit
 ✅ Now, my RDS connection is successfully verified! 🎉
 
 Next Steps
-➡️ Review Troubleshooting Guide
-➡️ Final Phase Setting up S3
+➡️ **[Storage – Amazon S3](../docs/s3-deployment.md)**
+➡️ **[Review Troubleshooting Guide](../docs/troubleshooting.md)**
