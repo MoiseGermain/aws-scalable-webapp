@@ -22,8 +22,6 @@ To connect to RDS from an EC2 instance, I need to **launch a new EC2 instance** 
 6. **Select Key Pair:** ✅ Use existing key or create a new one.
 7. **Click Launch**.
 
-📸 ![Launch EC2 in Public Subnet](../screenshots/launch-ec2-public.png)
-
 ✅ **Now, my EC2 instance is ready to connect to RDS.**  
 
 ---
@@ -40,8 +38,6 @@ By default, RDS is **inside a private subnet**, and **cannot be accessed directl
    - **Source:** **EC2 Security Group (`ASG-Web-Inst-SG`)**
 4. Click **Save Rules**.
 
-📸 ![Update RDS Security Group](../screenshots/update-rds-sg.png)
-
 ✅ **Now, my EC2 instance is allowed to connect to RDS.**  
 
 ---
@@ -56,3 +52,115 @@ Now that my EC2 instance has access to RDS, I will **log into it using SSH**.
 2. **Connect via SSH using the private key**:
    ```sh
    ssh -i my-key.pem ec2-user@<EC2-PUBLIC-IP>
+For example:
+ssh -i AWS-Key.pem ec2-user@18.234.56.78
+
+Last login: Mon Mar 11 14:41:59 2024 from 192.168.1.100
+
+       __|  __|_  )
+       _|  (     /   Amazon Linux 2 AMI
+      ___|\___|___|
+
+https://aws.amazon.com/amazon-linux-2/
+✅ Now, I am inside the EC2 instance.
+
+4️⃣ Connecting to RDS Aurora using MySQL CLI
+Since the EC2 web server already has the MySQL client installed, I will connect to the RDS instance.
+
+Steps to Connect to RDS
+Run the following command:
+
+sh
+Copy
+Edit
+mysql -u awsuser -p -h <RDS-ENDPOINT>
+Example:
+
+sh
+Copy
+Edit
+mysql -u awsuser -p -h scalable-webapp-db.cluster-xxxxxxxx.us-east-1.rds.amazonaws.com
+Enter the RDS password when prompted (awspassword).
+
+Expected Output:
+pgsql
+Copy
+Edit
+Welcome to the MySQL monitor.  Commands end with ; or \g.
+Your MySQL connection id is 34
+Server version: 5.7.34 MySQL Community Server (GPL)
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+✅ Now, I am connected to the RDS database.
+
+5️⃣ Running MySQL Commands to Verify Database Access
+Once connected, I can execute MySQL commands to check the databases and tables.
+
+Check Available Databases
+sh
+Copy
+Edit
+mysql> SHOW DATABASES;
+Expected Output:
+pgsql
+Copy
+Edit
++--------------------+
+| Database          |
++--------------------+
+| information_schema |
+| webapp_db         |
+| mysql             |
+| performance_schema |
++--------------------+
+4 rows in set (0.01 sec)
+Switch to the Web Application Database
+sh
+Copy
+Edit
+mysql> USE webapp_db;
+Expected Output:
+nginx
+Copy
+Edit
+Database changed
+Show Tables
+sh
+Copy
+Edit
+mysql> SHOW TABLES;
+Expected Output:
+sql
+Copy
+Edit
++-----------------+
+| Tables_in_webapp_db |
++-----------------+
+| users           |
+| orders          |
+| products        |
++-----------------+
+3 rows in set (0.01 sec)
+Query the Database (Example)
+I will check sample user records stored in the users table.
+
+sh
+Copy
+Edit
+mysql> SELECT * FROM users;
+Expected Output:
+sql
+Copy
+Edit
++----+-------+--------------+---------------------+
+| id | name  | phone        | email               |
++----+-------+--------------+---------------------+
+|  1 | Bob   | 630-555-1254 | bob@fakeaddress.com |
+|  2 | Alice | 571-555-4875 | alice@address2.us   |
++----+-------+--------------+---------------------+
+2 rows in set (0.00 sec)
+✅ Now, my RDS connection is successfully verified! 🎉
+
+Next Steps
+➡️ Review Troubleshooting Guide
+➡️ Final Phase Setting up S3
