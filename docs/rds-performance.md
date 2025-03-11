@@ -136,7 +136,7 @@ RDS allows **changing instance types** to **increase performance** or **reduce c
 ---
 
 ## **Next Steps**
-➡️ **[Set Up RDS Read Replicas for Performance Optimization](../docs/rds-replication.md)**  
+➡️ **[Connect RDS Aurora](../docs/rds-connection.md)**  
 ➡️ **[Review Troubleshooting Guide](../docs/troubleshooting.md)**  
 
 ---
