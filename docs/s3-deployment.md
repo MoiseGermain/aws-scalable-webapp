@@ -156,6 +156,7 @@ Buckets must be empty before deletion:
 ---
 
 ## ✅ **Next Steps**
+➡️ **[Cleanup](../docs/cleanup-resources.md)**
 ➡️ **[Review Troubleshooting Guide](../docs/troubleshooting.md)**    
 
 ---
